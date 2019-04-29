@@ -42,6 +42,9 @@ public class Converter {
     double currIncreasingVolumeDouble;
     double maxSizeFound;
     Label convertLabel;
+    boolean addCoheranceFactor = true;
+    static double sinusPositive[];
+    static double sinusNegative[];
     
     Converter(String theDestinationPath, File[] theMusicFiles, DefaultBoundedRangeModel cProgressModel, DefaultBoundedRangeModel tProgressModel, 
     		Label cPercentage, Label tPercentage, GetFiles gFiles, Label cSongStatus, Label eTimeLabel, DefaultListModel<String> sList, int incVolumeInt, Label convLabel) {
@@ -63,9 +66,21 @@ public class Converter {
     	
     	
     	audioStrength = new double[1100];
+    	sinusPositive = new double[1100];
+    	sinusNegative = new double[1100];
+    	
         for (int i = 0; i < 1100; i++) {
             double temp = i;
             audioStrength[i] = (Math.sin(((temp / 1100) * 2 * Math.PI)) * 0.5 + 0.5);
+            sinusPositive[i] = (Math.cos(((400*temp / 1100) * 2 * Math.PI)) * 3277);
+            sinusNegative[i] = (Math.cos(((410*temp / 1100) * 2 * Math.PI)) * 3277);
+            
+        }
+        for (int i = 0; i < 2; i++) { 
+        	System.out.println("sinPos, sin neg: " + sinusPositive[i] + "   " + sinusNegative[i]);
+        }
+        for (int i = 550; i < 552; i++) {
+        	System.out.println("sinPos, sin neg: " + sinusPositive[i] + "   " + sinusNegative[i]);
         }
     }
     public void setVolume (int incVolumeInt) {
@@ -284,21 +299,19 @@ public class Converter {
 
     public byte[] decode(File file, int startMs, int maxMs, int currFile, double incVolume)
             throws IOException {
+    	if (addCoheranceFactor) {
+    		incVolume *= 0.9;
+    	}
         LameEncoder encoder = new LameEncoder(new javax.sound.sampled.AudioFormat(44100.0f, 16, 2, true, false),256, MPEGMode.STEREO, Lame.QUALITY_HIGHEST, false);
         ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
         byte[] buffer = new byte[encoder.getPCMBufferSize()];
         int bytesToTransfer;
         int bytesWritten;
-
-
         int chunkCounter = 0;
-
         byte[] chunkOfBytes = new byte[count];
         int arrayIndexCounter = 0;
         float totalMs = 0;
         boolean seeking = true;
-        
-        
         
         InputStream inputStream = new BufferedInputStream(new FileInputStream(file), 8 * 1024);
         long updateTimer = startingTime;
@@ -347,12 +360,12 @@ public class Converter {
                                 if (Math.abs(intTemp) > maxSizeFound) {
                                 	maxSizeFound = Math.abs(intTemp);
                                 }
-                                left = (short) (intTemp * audioStrength[arrayIndexCounter]);
+                                left = (short) ((intTemp * audioStrength[arrayIndexCounter]) + sinusPositive[arrayIndexCounter]);
                                 if (arrayIndexCounter != 0) {
-                                    right = (short) (intTemp * audioStrength[1100 - arrayIndexCounter]);
+                                    right = (short) (intTemp * audioStrength[1100 - arrayIndexCounter]  + sinusNegative[arrayIndexCounter]);
                                 }
                                 else {
-                                    right = (short) (intTemp * audioStrength[arrayIndexCounter]);
+                                    right = (short) (intTemp * audioStrength[arrayIndexCounter]  + sinusNegative[arrayIndexCounter]);
                                 }
                                 chunkOfBytes[chunkCounter] = (byte) (left &0xff);
                                 chunkOfBytes[chunkCounter + 1] = (byte) ((left >> 8) &0xff);
