@@ -42,9 +42,10 @@ public class Converter {
     double currIncreasingVolumeDouble;
     double maxSizeFound;
     Label convertLabel;
-    boolean addCoheranceFactor = true;
-    static double sinusPositive[];
-    static double sinusNegative[];
+    boolean needsReferenceSignal = true;
+    //static double sinusPositive[];
+    //static double sinusNegative[];
+    static double signalProcessArr[];
     
     Converter(String theDestinationPath, File[] theMusicFiles, DefaultBoundedRangeModel cProgressModel, DefaultBoundedRangeModel tProgressModel, 
     		Label cPercentage, Label tPercentage, GetFiles gFiles, Label cSongStatus, Label eTimeLabel, DefaultListModel<String> sList, int incVolumeInt, Label convLabel) {
@@ -63,33 +64,25 @@ public class Converter {
     	increasingVolumeDouble = (100 + incVolumeInt) / 100;
     	convertLabel = convLabel;
     	
-    	
-    	
     	audioStrength = new double[1100];
-    	sinusPositive = new double[1100];
-    	sinusNegative = new double[1100];
+    	signalProcessArr = new double[1100];
     	
         for (int i = 0; i < 1100; i++) {
-            double temp = i;
-            audioStrength[i] = (Math.sin(((temp / 1100) * 2 * Math.PI)) * 0.5 + 0.5);
-            sinusPositive[i] = (Math.cos(((400*temp / 1100) * 2 * Math.PI)) * 3277);
-            sinusNegative[i] = (Math.cos(((410*temp / 1100) * 2 * Math.PI)) * 3277);
-            
+        	if (i < 800) {
+        		signalProcessArr[i] = (Math.sin(2.0 * Math.PI * 19.2 * (double) (i) / 44.1) * 1000) * 0.5 * (1.0 - Math.cos(2.0 * Math.PI * (double) (i) / 799.0));
+        	}
+        	else {
+        		signalProcessArr[i] = 0;
+        	}
+        	audioStrength[i] = (Math.sin((((double) (i) / 1100) * 2 * Math.PI)) * 0.5 + 0.5);
         }
-        for (int i = 0; i < 2; i++) { 
-        	System.out.println("sinPos, sin neg: " + sinusPositive[i] + "   " + sinusNegative[i]);
-        }
-        for (int i = 550; i < 552; i++) {
-        	System.out.println("sinPos, sin neg: " + sinusPositive[i] + "   " + sinusNegative[i]);
-        }
+        
     }
     public void setVolume (int incVolumeInt) {
     	increasingVolumeDouble = incVolumeInt;
     }
     
-    
     public void saveByteArrayAsFile(byte[] data, String fileName) {
-    	System.out.println("inside SaveByteArray");
         FileOutputStream fos;
         try {
             File dir = new File(destinationFolder);
@@ -294,12 +287,11 @@ public class Converter {
         }
         return;
     }
-        
-
-
+    
+    
     public byte[] decode(File file, int startMs, int maxMs, int currFile, double incVolume)
             throws IOException {
-    	if (addCoheranceFactor) {
+    	if (needsReferenceSignal) {
     		incVolume *= 0.9;
     	}
         LameEncoder encoder = new LameEncoder(new javax.sound.sampled.AudioFormat(44100.0f, 16, 2, true, false),256, MPEGMode.STEREO, Lame.QUALITY_HIGHEST, false);
@@ -319,7 +311,6 @@ public class Converter {
         try {
             Bitstream bitstream = new Bitstream(inputStream);
             Decoder decoder = new Decoder();
-            maxSizeFound = 0;
             boolean done = false;
             while (! done) {
                 Header frameHeader = bitstream.readFrame();
@@ -357,21 +348,26 @@ public class Converter {
                                 currPart[2] = (byte) (s & 0xff);
                                 currPart[3] = (byte) ((s >> 8 ) & 0xff);
                                 intTemp = (int)((((currPart[0] + (currPart[1] << 8)) + (currPart[2] + (currPart[3] << 8)))/2) * incVolume);
-                                if (Math.abs(intTemp) > maxSizeFound) {
-                                	maxSizeFound = Math.abs(intTemp);
-                                }
-                                left = (short) ((intTemp * audioStrength[arrayIndexCounter]) + sinusPositive[arrayIndexCounter]);
+                                
+                                left = (short) (intTemp * audioStrength[arrayIndexCounter]);
                                 if (arrayIndexCounter != 0) {
-                                    right = (short) (intTemp * audioStrength[1100 - arrayIndexCounter]  + sinusNegative[arrayIndexCounter]);
+                                    right = (short) (intTemp * audioStrength[1100 - arrayIndexCounter]);
                                 }
                                 else {
-                                    right = (short) (intTemp * audioStrength[arrayIndexCounter]  + sinusNegative[arrayIndexCounter]);
+                                    right = (short) (intTemp * audioStrength[arrayIndexCounter]);
                                 }
+                                
+                                // if we wish to add reference signal we add the audio from the signalprocess array
+                                if (needsReferenceSignal) {
+                                	left = (short)((signalProcessArr[arrayIndexCounter]) + left);
+                                    right = (short)((signalProcessArr[arrayIndexCounter]) + right);
+                                }
+                                
+                                // constructing audio data again
                                 chunkOfBytes[chunkCounter] = (byte) (left &0xff);
                                 chunkOfBytes[chunkCounter + 1] = (byte) ((left >> 8) &0xff);
                                 chunkOfBytes[chunkCounter + 2] = (byte) (right &0xff);
                                 chunkOfBytes[chunkCounter + 3] = (byte) ((right >> 8) &0xff);
-
                                 chunkCounter += 4;
                                 
                                 if (chunkCounter >= 32768) {
@@ -394,7 +390,6 @@ public class Converter {
                                     mp3.write(buffer, 0, bytesWritten);
                                     chunkCounter = 0;
                                 }
-                                
                                 minCounter = 0;
                                 arrayIndexCounter++;
                                 if (arrayIndexCounter >= audioStrength.length) {
