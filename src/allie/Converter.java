@@ -49,6 +49,7 @@ public class Converter {
     
     Converter(String theDestinationPath, File[] theMusicFiles, DefaultBoundedRangeModel cProgressModel, DefaultBoundedRangeModel tProgressModel, 
     		Label cPercentage, Label tPercentage, GetFiles gFiles, Label cSongStatus, Label eTimeLabel, DefaultListModel<String> sList, int incVolumeInt, Label convLabel) {
+    	// getting details from the window app
     	destinationFolder = theDestinationPath;
     	musicFiles = theMusicFiles;
     	currentSongModel = cProgressModel;
@@ -64,8 +65,8 @@ public class Converter {
     	increasingVolumeDouble = (100 + incVolumeInt) / 100;
     	convertLabel = convLabel;
     	
-    	audioStrength = new double[1100];
-    	signalProcessArr = new double[1100];
+    	audioStrength = new double[1100];	//The 40Hz effect array, increasing and decreasing volume 40x per second
+    	signalProcessArr = new double[1100];	// sends signal at 19200Hz for signal processing
     	
         for (int i = 0; i < 1100; i++) {
         	if (i < 800) {
@@ -78,10 +79,12 @@ public class Converter {
         }
         
     }
+    // sets the volume
     public void setVolume (int incVolumeInt) {
     	increasingVolumeDouble = incVolumeInt;
     }
     
+    // saves the .mp3 to the computer
     public void saveByteArrayAsFile(byte[] data, String fileName) {
         FileOutputStream fos;
         try {
@@ -108,6 +111,15 @@ public class Converter {
             	if (lastSong) {
             		changePercentage(totalPercentage, 100);
                 	changeProgress(totalProgressModel, 100);
+                	changeTimeRemaining(0);
+                	convertLabel.setText("Finished converting " + musicFiles.length + " files");
+                	if (musicFiles.length == 1) {
+                		convertLabel.setText("Finished converting " + musicFiles.length + " file");
+                	}
+                	currentSongStatusLabel.setText("");
+                	
+                	estimatedTimeLabel.setText("Time taken: " + getTimeFromSecondsAsString((int)((System.currentTimeMillis() - startingTime)/1000)) );
+                	
             		gf.clearMusicFilesArray();
             		songList.clear();
             	}
@@ -118,40 +130,34 @@ public class Converter {
             }
         }
     }
-
+    
+    // the entire process. This is the main function
     public void convertFiles() {
-        thread = new Thread() {
+        thread = new Thread() {	//using threads since this process can take up to several minutes which windows can consider as frozen program
             @Override
             public void run() {
                 String fileName = "";
-                lastSong = false;
-                startingTime = System.currentTimeMillis();
-                for (int j = 0; j < musicFiles.length; j++) {
-                	if (j == musicFiles.length - 1) {
+                lastSong = false;	// says if this is the last song in the list to convert.
+                startingTime = System.currentTimeMillis();		// for time estimation
+                for (int j = 0; j < musicFiles.length; j++) {	// going through each file on the list
+                	if (j == musicFiles.length - 1) {	// this means this is the last song to convert.
                 		lastSong = true;
                 	}
+                	// getting the name of the .mp3 file
                     fileName = musicFiles[j].getName();
-                    convertLabel.setText("Converting " + fileName + "...");
-                    byte[] byteData = null;
+                    convertLabel.setText("Converting " + fileName + "...");	// setting text on the app "converting songName..."
+                    byte[] byteData = null;	//the mp3 file itself
 
                     try {
-                    	findMaximum(musicFiles[j], 0, getMpthreeDuration(j), j, increasingVolumeDouble);
+                    	findMaximum(musicFiles[j], 0, getMpthreeDuration(j));	//finds the maximum volume we can have for this song 
                     }catch (IOException e) {
                     }
-                    System.out.println("Max size: " + maxSizeFound);
                 	try {
-                		//double oldMaximum = maxSizeFound / increasingVolumeDouble; // 31110
-                		double newIntVolume = (32000 / (maxSizeFound)); //
-                		//double newIntVolume = (maxSizeFound / (double) 32767)/(increasingVolumeDouble);
-                		if (newIntVolume > 2) {
-                			newIntVolume = 2;
-                		}
-                		currentSongStatusLabel.setText("Volume set at: " + (int) (newIntVolume * 100) + "%");
-                        byteData = decode(musicFiles[j], 0, getMpthreeDuration(j), j, newIntVolume);
-                        System.out.println("Max size: " + maxSizeFound + " newIntVolume: " + newIntVolume);
+                		currentSongStatusLabel.setText("Volume set at: " + (int) ((32000 / (maxSizeFound)) * 100) + "%");	// telling window app to say how much we set the volume at
+                        byteData = decode(musicFiles[j], 0, getMpthreeDuration(j), j, (32000 / (maxSizeFound)));	// starting the process to unpack .mp3, change the file, and encode to .mp3
                     }catch (IOException e) {
                     }
-                    saveByteArrayAsFile(byteData, fileName);
+                    saveByteArrayAsFile(byteData, fileName);	// saving the file (byteData) to the computer.
                 }
             }
 
@@ -160,7 +166,7 @@ public class Converter {
 
     }
 
-
+    // returns the length/duration of the .mp3 file
     public int getMpthreeDuration(int fileIndex) {
         int duration = 0;
         Header h = null;
@@ -181,15 +187,23 @@ public class Converter {
         return duration;
     }
     
+    // sets the progressBar
     public void changeProgress(DefaultBoundedRangeModel cmdl, int prog) {
-    	//cmdl.setValue(60);
     	cmdl.setValue(prog);
     }
     
+    // sets the percentage
     public void changePercentage(Label cPer, int prog) {
     	cPer.setText(prog + "%");
     }
+    
+    // sets the estimated time remaining
     public void changeTimeRemaining(int secs) {
+    	String toPrint = getTimeFromSecondsAsString(secs);
+    	estimatedTimeLabel.setText("Est Time Remaining: " + toPrint);
+    }
+    
+    private String getTimeFromSecondsAsString(int secs) {
     	int hours = (int) ((double) secs)/3600; 
     	int mins = (int) ((double) secs - hours*3600)/60;
     	int sec = secs - hours*3600 - mins * 60;
@@ -211,14 +225,23 @@ public class Converter {
     		toPrint += "0";
     	}
     	toPrint += sec;
-    	estimatedTimeLabel.setText("Est Time Remaining: " + toPrint);
+    	
+    	return toPrint;
     }
     
-    public void findMaximum(File file, int startMs, int maxMs, int currFile, double incVolume) 
+    // finds out how much we can increase the volume
+    public void findMaximum(File file, int startMs, int maxMs) 
     		throws IOException {
         int arrayIndexCounter = 0;
         float totalMs = 0;
         boolean seeking = true;
+        int combinedLeftAndRightAudio;
+        int minCounter = 0;
+        byte[] currPart;
+        short[] pcm;
+        SampleBuffer output;
+        
+        
         InputStream inputStream = new BufferedInputStream(new FileInputStream(file), 8 * 1024);
         try {
             Bitstream bitstream = new Bitstream(inputStream);
@@ -231,36 +254,25 @@ public class Converter {
                     done = true;
                 } else {
                     totalMs += frameHeader.ms_per_frame();
-
                     if (totalMs >= startMs) {
                         seeking = false;
                     }
-
                     if (! seeking) {
-                        SampleBuffer output = (SampleBuffer) decoder.decodeFrame(frameHeader, bitstream);
-
-                        if (output.getSampleFrequency() != 44100
-                                || output.getChannelCount() != 2) {
-                        	
-                        }
-
-                        int intTemp;
-                        int minCounter = 0;
-                        byte[] currPart = new byte[4];
-                        short[] pcm = output.getBuffer();
-
+                        output = (SampleBuffer) decoder.decodeFrame(frameHeader, bitstream);
+                        currPart = new byte[4];
+                        pcm = output.getBuffer();
                         for (short s : pcm) {
                             if (minCounter == 0) {
                                 currPart[0] = (byte) (s & 0xff);
                                 currPart[1] = (byte) ((s >> 8 ) & 0xff);
                                 minCounter++;
                             }
-                            else if (minCounter == 1) {
+                            else {
                                 currPart[2] = (byte) (s & 0xff);
                                 currPart[3] = (byte) ((s >> 8 ) & 0xff);
-                                intTemp = (int)((((currPart[0] + (currPart[1] << 8)) + (currPart[2] + (currPart[3] << 8)))/2));
-                                if (Math.abs(intTemp) > maxSizeFound) {
-                                	maxSizeFound = Math.abs(intTemp);
+                                combinedLeftAndRightAudio = (int)((((currPart[0] + (currPart[1] << 8)) + (currPart[2] + (currPart[3] << 8)))/2));
+                                if (Math.abs(combinedLeftAndRightAudio) > maxSizeFound) {
+                                	maxSizeFound = Math.abs(combinedLeftAndRightAudio);
                                 }
                                 minCounter = 0;
                                 arrayIndexCounter++;
@@ -291,9 +303,8 @@ public class Converter {
     
     public byte[] decode(File file, int startMs, int maxMs, int currFile, double incVolume)
             throws IOException {
-    	if (needsReferenceSignal) {
-    		incVolume *= 0.9;
-    	}
+    	
+    	
         LameEncoder encoder = new LameEncoder(new javax.sound.sampled.AudioFormat(44100.0f, 16, 2, true, false),256, MPEGMode.STEREO, Lame.QUALITY_HIGHEST, false);
         ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
         byte[] buffer = new byte[encoder.getPCMBufferSize()];
@@ -304,6 +315,13 @@ public class Converter {
         int arrayIndexCounter = 0;
         float totalMs = 0;
         boolean seeking = true;
+        short left;
+        short right;
+        int intTemp;
+        boolean switcher;
+        byte[] currPart;
+        short[] pcm;
+        SampleBuffer output;
         
         InputStream inputStream = new BufferedInputStream(new FileInputStream(file), 8 * 1024);
         long updateTimer = startingTime;
@@ -318,43 +336,32 @@ public class Converter {
                     done = true;
                 } else {
                     totalMs += frameHeader.ms_per_frame();
-
                     if (totalMs >= startMs) {
                         seeking = false;
                     }
-
                     if (! seeking) {
-                        SampleBuffer output = (SampleBuffer) decoder.decodeFrame(frameHeader, bitstream);
+                        output = (SampleBuffer) decoder.decodeFrame(frameHeader, bitstream);
 
-                        if (output.getSampleFrequency() != 44100
-                                || output.getChannelCount() != 2) {
-                        	
-                        }
-
-                        short left;
-                        short right;
-                        int intTemp;
-                        int minCounter = 0;
-                        byte[] currPart = new byte[4];
-                        short[] pcm = output.getBuffer();
+                        currPart = new byte[4];
+                        pcm = output.getBuffer();
+                        switcher = false;
 
                         for (short s : pcm) {
-                            if (minCounter == 0) {
+                            if (!switcher) {
                                 currPart[0] = (byte) (s & 0xff);
                                 currPart[1] = (byte) ((s >> 8 ) & 0xff);
-                                minCounter++;
                             }
-                            else if (minCounter == 1) {
+                            else {
                                 currPart[2] = (byte) (s & 0xff);
                                 currPart[3] = (byte) ((s >> 8 ) & 0xff);
                                 intTemp = (int)((((currPart[0] + (currPart[1] << 8)) + (currPart[2] + (currPart[3] << 8)))/2) * incVolume);
                                 
                                 left = (short) (intTemp * audioStrength[arrayIndexCounter]);
-                                if (arrayIndexCounter != 0) {
+                                if (arrayIndexCounter != 0) {	//we get a null referance if it is 0
                                     right = (short) (intTemp * audioStrength[1100 - arrayIndexCounter]);
                                 }
                                 else {
-                                    right = (short) (intTemp * audioStrength[arrayIndexCounter]);
+                                    right = (short) (intTemp * audioStrength[arrayIndexCounter]); // this means left is 0.5, therefore right is the same, 0.5
                                 }
                                 
                                 // if we wish to add reference signal we add the audio from the signalprocess array
@@ -390,19 +397,18 @@ public class Converter {
                                     mp3.write(buffer, 0, bytesWritten);
                                     chunkCounter = 0;
                                 }
-                                minCounter = 0;
                                 arrayIndexCounter++;
                                 if (arrayIndexCounter >= audioStrength.length) {
                                     arrayIndexCounter = 0;
                                 }
                             }
+                            switcher = !switcher;
                         }
 
                     }
 
                     if (totalMs >= (startMs + maxMs)) {
                         done = true;
-                        System.out.println("finished converting current Song");
                     }
                 }
                 bitstream.closeFrame();
