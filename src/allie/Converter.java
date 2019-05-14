@@ -47,6 +47,8 @@ public class Converter {
     //static double sinusNegative[];
     static double signalProcessArr[];
     
+    
+    
     Converter(String theDestinationPath, File[] theMusicFiles, DefaultBoundedRangeModel cProgressModel, DefaultBoundedRangeModel tProgressModel, 
     		Label cPercentage, Label tPercentage, GetFiles gFiles, Label cSongStatus, Label eTimeLabel, DefaultListModel<String> sList, int incVolumeInt, Label convLabel) {
     	// getting details from the window app
@@ -203,6 +205,7 @@ public class Converter {
     	estimatedTimeLabel.setText("Est Time Remaining: " + toPrint);
     }
     
+    // changes seconds to the format "00:00:00"
     private String getTimeFromSecondsAsString(int secs) {
     	int hours = (int) ((double) secs)/3600; 
     	int mins = (int) ((double) secs - hours*3600)/60;
@@ -229,7 +232,7 @@ public class Converter {
     	return toPrint;
     }
     
-    // finds out how much we can increase the volume
+    // finds out how much we can increase the volume, since the volume is often too low.
     public void findMaximum(File file, int startMs, int maxMs) 
     		throws IOException {
         int arrayIndexCounter = 0;
