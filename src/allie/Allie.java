@@ -11,28 +11,22 @@ import java.util.prefs.Preferences;
 import java.awt.event.ActionEvent;
 import javax.swing.JList;
 import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
 import javax.swing.DefaultBoundedRangeModel;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
-
 import java.awt.Label;
-
 import javax.swing.JLabel;
 import java.awt.Font;
-import javax.swing.JTextArea;
+import java.awt.Color;
+import java.awt.Toolkit;
+import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 
 
-
-/*
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.JSlider;
-*/
 
 public class Allie {
 
-	private JFrame frame;
+	private JFrame frmAlicehz;
 	private Preferences prefs = Preferences.userRoot().node(this.getClass().getName());
 	private final JLabel lblNewLabel_1 = new JLabel("Unverified Experimental Software");
 	//private int increasingVolumeInt;
@@ -43,11 +37,22 @@ public class Allie {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
+				    for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+				        if ("Nimbus".equals(info.getName())) {
+				            UIManager.setLookAndFeel(info.getClassName());
+				            break;
+				        }
+				    }
+				} catch (Exception e) {
+				    // If Nimbus is not available, you can set the GUI to another look and feel.
+				}
+				try {
 					Allie window = new Allie();
-					window.frame.setVisible(true);
+					window.frmAlicehz.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+				
 			}
 		});
 	}
@@ -70,72 +75,47 @@ public class Allie {
 		
 		
 		
-		frame = new JFrame();
-		frame.setBounds(100, 100, 667, 516);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmAlicehz = new JFrame();
+		frmAlicehz.setIconImage(Toolkit.getDefaultToolkit().getImage(Allie.class.getResource("/allie/AllieIcon80x80.png")));
+		frmAlicehz.getContentPane().setBackground(UIManager.getColor("Button.background"));
+		frmAlicehz.setBounds(100, 100, 554, 492);
+		frmAlicehz.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		frame.setTitle("Alice");
+		frmAlicehz.setTitle("Alice - 40Hz isochronic mp3 converter");
 		
 
 		Label convertLabel = new Label("");
-		convertLabel.setBounds(31, 183, 226, 31);
-		frame.getContentPane().add(convertLabel);
+		convertLabel.setForeground(Color.BLACK);
+		convertLabel.setBounds(301, 178, 226, 31);
+		frmAlicehz.getContentPane().add(convertLabel);
 		
-		
-		
-		/*
-		 * 
-		JLabel discouragedLabel = new JLabel("");
-		discouragedLabel.setBounds(32, 159, 226, 35);
-		frame.getContentPane().add(discouragedLabel);
-		JLabel extraVolumeStrength = new JLabel("0%");
-		extraVolumeStrength.setEnabled(false);
-		extraVolumeStrength.setBounds(184, 114, 74, 37);
-		frame.getContentPane().add(extraVolumeStrength);
-		JSlider volumeSlider = new JSlider();
-		volumeSlider.setEnabled(false);
-		volumeSlider.setValue(0);
-		volumeSlider.setBounds(32, 122, 136, 26);
-		volumeSlider.setMinimum(100);
-		volumeSlider.setMaximum(200);
-		
-		volumeSlider.addChangeListener(new ChangeListener() {
-			public void stateChanged(ChangeEvent e) {
-				increasingVolumeInt = volumeSlider.getValue();
-				extraVolumeStrength.setText(increasingVolumeInt + "%");
-				if (increasingVolumeInt > 0) {
-					//discouragedLabel.setText("May need 2 tries for each song");
-				}
-				else {
-					discouragedLabel.setText("");
-				}
-			}
-		});
-		
-		frame.getContentPane().add(volumeSlider);
-		*/
 		
 		DefaultListModel<String> model = new DefaultListModel<String>();
-		frame.getContentPane().setLayout(null);
+		frmAlicehz.getContentPane().setLayout(null);
 		JList<String> list = new JList<String>(model);
-		list.setBounds(290, 159, 260, 300);
-		frame.getContentPane().add(list);
+		list.setBackground(new Color(245, 245, 245));
+		list.setBounds(10, 127, 260, 300);
+		frmAlicehz.getContentPane().add(list);
 		
 		Label currentSongStatusLabel = new Label("");
-		currentSongStatusLabel.setBounds(20, 269, 226, 24);
-		frame.getContentPane().add(currentSongStatusLabel);
+		currentSongStatusLabel.setForeground(Color.BLACK);
+		currentSongStatusLabel.setBounds(301, 269, 226, 24);
+		frmAlicehz.getContentPane().add(currentSongStatusLabel);
 		
 		Label estimatedTimeLabel = new Label("Estimated Time: 00:00:00");
-		estimatedTimeLabel.setBounds(20, 354, 183, 24);
-		frame.getContentPane().add(estimatedTimeLabel);
+		estimatedTimeLabel.setForeground(Color.BLACK);
+		estimatedTimeLabel.setBounds(301, 343, 183, 24);
+		frmAlicehz.getContentPane().add(estimatedTimeLabel);
 		
 		JLabel fileSelectorLabel = new JLabel("No files selected");
-		fileSelectorLabel.setBounds(428, 124, 158, 24);
-		frame.getContentPane().add(fileSelectorLabel);
+		fileSelectorLabel.setForeground(Color.BLACK);
+		fileSelectorLabel.setBounds(147, 61, 158, 24);
+		frmAlicehz.getContentPane().add(fileSelectorLabel);
 		
 		JLabel destinationSelectorLabel = new JLabel("No destination selected");
-		destinationSelectorLabel.setBounds(428, 91, 165, 24);
-		frame.getContentPane().add(destinationSelectorLabel);
+		destinationSelectorLabel.setForeground(Color.BLACK);
+		destinationSelectorLabel.setBounds(147, 92, 165, 24);
+		frmAlicehz.getContentPane().add(destinationSelectorLabel);
 		
 		if (prefs.get("destination", "") != "") {
 			if (Files.exists(Paths.get(prefs.get("destination", "")))) {
@@ -161,7 +141,9 @@ public class Allie {
 		
 		
 		JButton btnSelectFiles = new JButton("Select Files");
-		btnSelectFiles.setBounds(291, 125, 127, 23);
+		btnSelectFiles.setForeground(new Color(0, 0, 0));
+		btnSelectFiles.setBackground(new Color(204, 204, 204));
+		btnSelectFiles.setBounds(10, 62, 127, 23);
 		btnSelectFiles.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				fileSelectorLabel.setText("No files selected");
@@ -187,10 +169,12 @@ public class Allie {
 				}
 			}
 		});
-		frame.getContentPane().add(btnSelectFiles);
+		frmAlicehz.getContentPane().add(btnSelectFiles);
 		
 		JButton btnChangeDestination = new JButton("Destination");
-		btnChangeDestination.setBounds(291, 92, 127, 23);
+		btnChangeDestination.setForeground(new Color(0, 0, 0));
+		btnChangeDestination.setBackground(new Color(204, 204, 204));
+		btnChangeDestination.setBounds(10, 93, 127, 23);
 		btnChangeDestination.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
@@ -218,35 +202,44 @@ public class Allie {
 				}
 			}
 		});
-		frame.getContentPane().add(btnChangeDestination);
+		frmAlicehz.getContentPane().add(btnChangeDestination);
 		
+		
+		UIManager.getLookAndFeelDefaults().put("nimbusOrange", UIManager.getLookAndFeelDefaults().get("nimbusFocus"));
 		
 		DefaultBoundedRangeModel currentSongModel = new DefaultBoundedRangeModel();
 		JProgressBar currSongProgress = new JProgressBar(currentSongModel);
-		currSongProgress.setBounds(20, 225, 183, 38);
+		currSongProgress.setForeground(new Color(51, 255, 51));
+		currSongProgress.setBackground(new Color(255, 255, 255));
+		currSongProgress.setBounds(301, 225, 183, 38);
 		currentSongModel.setMinimum(0);
 		currentSongModel.setMaximum(100);
-		frame.getContentPane().add(currSongProgress);
+		frmAlicehz.getContentPane().add(currSongProgress);
 		
 		DefaultBoundedRangeModel totalProgressModel = new DefaultBoundedRangeModel();
 		JProgressBar totalProgress = new JProgressBar(totalProgressModel);
-		totalProgress.setBounds(20, 310, 183, 38);
+		totalProgress.setBounds(301, 299, 183, 38);
 		totalProgress.setMinimum(0);
 		totalProgress.setMaximum(100);
-		frame.getContentPane().add(totalProgress);
+		frmAlicehz.getContentPane().add(totalProgress);
+		
 		
 
 		Label currSongPercentage = new Label("");
-		currSongPercentage.setBounds(210, 225, 47, 38);
-		frame.getContentPane().add(currSongPercentage);
+		currSongPercentage.setForeground(Color.BLACK);
+		currSongPercentage.setBounds(490, 225, 47, 38);
+		frmAlicehz.getContentPane().add(currSongPercentage);
 		
 		Label totalSongPercentage = new Label("");
-		totalSongPercentage.setBounds(210, 310, 47, 38);
-		frame.getContentPane().add(totalSongPercentage);
+		totalSongPercentage.setForeground(Color.BLACK);
+		totalSongPercentage.setBounds(490, 300, 47, 38);
+		frmAlicehz.getContentPane().add(totalSongPercentage);
 		
 		
 		JButton btnConvert = new JButton("Convert!");
-		btnConvert.setBounds(24, 137, 165, 35);
+		btnConvert.setForeground(new Color(0, 0, 0));
+		btnConvert.setBackground(new Color(204, 204, 204));
+		btnConvert.setBounds(301, 131, 183, 35);
 		btnConvert.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				convertLabel.setText("");
@@ -270,54 +263,16 @@ public class Allie {
 				
 			}
 		});
-		frame.getContentPane().add(btnConvert);		
-		
-		JLabel lblNewLabel = new JLabel("Isochronic mp3 converter (40hz) - Adaptive Gain");
-		lblNewLabel.setBounds(199, 20, 497, 48);
-		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 18));
-		frame.getContentPane().add(lblNewLabel);
+		frmAlicehz.getContentPane().add(btnConvert);
 		lblNewLabel_1.setEnabled(false);
 		lblNewLabel_1.setBounds(272, 485, 359, 31);
 		lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		frame.getContentPane().add(lblNewLabel_1);
-		
-		/*
-		JTextArea tDisclaimer = new JTextArea();
-		JScrollPane sp = new JScrollPane(tDisclaimer);
-		sp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		sp.setSize(254, 300);
-		sp.setLocation(594, 156);
-		tDisclaimer.setBounds(546, 56, 209, 180);
-		tDisclaimer.setFont(new Font("Monospaced", Font.PLAIN, 11));
-		tDisclaimer.setText("Disclaimer  \n==========\n\nAllie \nVersion 0.9.2 Beta\n\nLast updated: August 28, 2018\n\nAllie is a software for converting audio files to be Isochronic at 40Hz.  This type of modulation may have different effects on people that listen to the output file. The use of the files is at the listener's own risk. No claims are made for any particular effect from listening to the converted sounds, benefits or risks.\n\nIt is also the responsibility of the user to respect any applicable copyrights for the music being converted.\n\nIn no event shall the author of this software be liable for any special, direct, indirect, consequential, incidental damages or any damages whatsoever, whether in an action of contract, negligence or other tort, arising out of or in connection with the use of the software or its output. The author reserves the right to make additions, deletions, or modification to the software at any time without prior notice. \n\n\n");
-		tDisclaimer.setLineWrap(true);
-		tDisclaimer.setWrapStyleWord(true);
-		tDisclaimer.setCaretPosition(0);
-		frame.getContentPane().add(sp); 
-		*/
+		frmAlicehz.getContentPane().add(lblNewLabel_1);
 		
 		JLabel imageLabel = new JLabel();
 		imageLabel.setIcon(new ImageIcon(this.getClass().getResource("AllieIcon80x80.png")));
-		imageLabel.setBounds(42, 21, 115, 105);
-		frame.getContentPane().add(imageLabel);
-		
-		
-		/*
-		
-		JLabel lblVolumeIncreaser = new JLabel("Volume Increaser");
-		lblVolumeIncreaser.setEnabled(false);
-		lblVolumeIncreaser.setFont(new Font("Tahoma", Font.BOLD, 13));
-		lblVolumeIncreaser.setBounds(32, 80, 158, 38);
-		frame.getContentPane().add(lblVolumeIncreaser);
-		
-		
-		*/
-		
-		
-		
-		
-		
-		
+		imageLabel.setBounds(353, 11, 90, 105);
+		frmAlicehz.getContentPane().add(imageLabel);
 		
 	}
 }
