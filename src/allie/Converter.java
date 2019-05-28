@@ -370,6 +370,7 @@ public class Converter {
                                 // if we wish to add reference signal we add the audio from the signalprocess array
                                 if (needsReferenceSignal) {
                                 	left = (short)((signalProcessArr[arrayIndexCounter]) + left);
+                                	//right = left;
                                     right = (short)((signalProcessArr[arrayIndexCounter]) + right);
                                 }
                                 
